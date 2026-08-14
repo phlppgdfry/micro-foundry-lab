@@ -1,0 +1,12 @@
+[
+  {
+    "question": "How long do employees have to submit expenses?",
+    "must_include": ["30 days"],
+    "source": "employee-handbook.md"
+  },
+  {
+    "question": "Can the assistant take actions for a user?",
+    "must_include": ["never performs actions"],
+    "source": "product-brief.md"
+  }
+]
