@@ -3,7 +3,9 @@ import os
 
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
+from dotenv import load_dotenv
 
+load_dotenv()
 endpoint = os.environ["FOUNDRY_PROJECT_ENDPOINT"]
 model = os.getenv("FOUNDRY_MODEL", "gpt-5-mini")
 
