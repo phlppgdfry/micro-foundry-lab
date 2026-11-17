@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Micro Foundry Lab — ask the documents</title>
+<style>
+  :root { --bg:#f6f7f9; --panel:#fff; --ink:#111827; --muted:#6b7280; --line:#e5e7eb; --accent:#0f6cbd; --soft:#eaf3fb; --warn:#a15c00; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#4aa3ff; --soft:#10263d; --warn:#f0b35a; } }
+  * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 -apple-system,"Segoe UI",Inter,Roboto,sans-serif }
+  .wrap { max-width:860px; margin:0 auto; padding:40px 16px 60px }
+  .eyebrow { font:600 12px/1 sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--muted) }
+  h1 { font-size:clamp(26px,4vw,34px); margin:8px 0 6px; letter-spacing:-.02em } p.lede { color:var(--muted); margin:0 0 22px }
+  form { display:flex; gap:8px } input { flex:1; font:inherit; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:var(--panel); color:var(--ink) }
+  input:focus { outline:3px solid var(--soft); border-color:var(--accent) }
+  button { font:600 15px inherit; padding:12px 18px; border:0; border-radius:12px; background:var(--accent); color:#fff; cursor:pointer } button:disabled { opacity:.5 }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 26px } .chip { background:var(--panel); color:var(--ink); border:1px solid var(--line); font-weight:500; font-size:13px; padding:6px 11px; border-radius:999px }
+  .answer { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px }
+  .meta { display:flex; justify-content:space-between; gap:10px; color:var(--muted); font-size:13px; margin-bottom:8px; flex-wrap:wrap }
+  .badge { background:var(--soft); color:var(--accent); border-radius:999px; padding:1px 9px; font-weight:600 } .badge.offline { color:var(--warn) }
+  .text { font-size:16px; white-space:pre-wrap }
+  h2 { font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:22px 0 8px }
+  details { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:8px }
+  summary { cursor:pointer; font-weight:600 } summary code { font-weight:500; color:var(--accent) } details p { color:var(--muted); margin:8px 0 0; white-space:pre-wrap }
+  .bar { display:inline-block; height:6px; border-radius:3px; background:var(--accent); margin-left:8px; vertical-align:middle }
+  .empty { color:var(--muted) } .error { color:#c0392b }
+  footer { margin-top:40px; color:var(--muted); font-size:13px } a { color:var(--accent) }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Micro Foundry Lab · grounded document assistant</p>
+  <h1>Ask the documents</h1>
+  <p class="lede">Every answer shows which section it came from. If the documents don't say it, the assistant should say so.</p>
+  <form id="ask"><input id="q" aria-label="Question" placeholder="How long do employees have to submit expenses?" autocomplete="off"><button id="go">Ask</button></form>
+  <div class="chips" id="chips"></div>
+  <section id="out" aria-live="polite"><p class="empty">Try one of the questions above.</p></section>
+  <footer><span id="health"></span> · <a href="/docs">API docs</a> · <a href="https://github.com/phlppgdfry/micro-foundry-lab">Source</a></footer>
+</div>
+<script>
+const examples = ["How long do employees have to submit expenses?", "How many remote days per week are allowed?", "Can the assistant take actions for a user?", "What is the parental leave policy?"];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+$("chips").innerHTML = examples.map((e) => `<button class="chip" type="button">${esc(e)}</button>`).join("");
+$("chips").addEventListener("click", (e) => { if (e.target.matches(".chip")) { $("q").value = e.target.textContent; ask(); } });
+$("ask").addEventListener("submit", (e) => { e.preventDefault(); ask(); });
+fetch("/health").then((r) => r.json()).then((h) => { $("health").textContent = `provider: ${h.provider}${h.provider === "foundry" ? " · model " + h.model : ""}`; }).catch(() => {});
+
+async function ask() {
+  const question = $("q").value.trim(); if (question.length < 3) return;
+  $("go").disabled = true; $("out").innerHTML = '<p class="empty">Retrieving sources…</p>';
+  const started = performance.now();
+  try {
+    const res = await fetch("/v1/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail?.[0]?.msg || data.detail || res.statusText);
+    const ms = Math.round(performance.now() - started), max = Math.max(1, ...data.citations.map((c) => c.relevance));
+    $("out").innerHTML = `<div class="answer"><div class="meta"><span class="badge ${data.provider.startsWith("offline") ? "offline" : ""}">${esc(data.provider)}</span><span>${data.citations.length} source${data.citations.length === 1 ? "" : "s"} · ${ms} ms</span></div><div class="text">${esc(data.answer)}</div></div>`
+      + `<h2>Sources used</h2>` + (data.citations.length ? data.citations.map((c) => `<details><summary><code>${esc(c.anchor)}</code><span class="bar" style="width:${12 + 48 * c.relevance / max}px" title="relevance ${c.relevance}"></span></summary><p>${esc(c.excerpt)}</p></details>`).join("") : `<p class="empty">No section matched well enough, so nothing was passed to the model.</p>`);
+  } catch (err) { $("out").innerHTML = `<p class="error">${esc(err.message)}</p>`; }
+  finally { $("go").disabled = false; }
+}
+</script>
+</body>
+</html>

@@ -22,3 +22,7 @@ jobs:
         run: ruff check .
       - name: Test
         run: pytest
+      - name: Evaluation baseline (offline, no Azure needed)
+        run: python -m micro_foundry.evals
+        env:
+          MICRO_FOUNDRY_PROVIDER: offline
