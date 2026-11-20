@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 from micro_foundry.config import get_settings
@@ -60,6 +60,11 @@ def health() -> dict[str, str | bool]:
 def page() -> str:
     """A minimal page to ask questions and inspect citations (Swagger stays at /docs)."""
     return PAGE.read_text(encoding="utf-8")
+
+
+@app.get("/favicon.svg", include_in_schema=False)
+def favicon() -> FileResponse:
+    return FileResponse(PAGE.with_name("favicon.svg"), media_type="image/svg+xml")
 
 
 @app.post("/v1/chat", response_model=ChatResponse)
