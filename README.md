@@ -3,6 +3,12 @@
 [![Quality](https://github.com/phlppgdfry/micro-foundry-lab/actions/workflows/quality.yml/badge.svg)](https://github.com/phlppgdfry/micro-foundry-lab/actions/workflows/quality.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+<!-- showcase:start -->
+> **[▶ Live showcase](https://phlppgdfry.github.io/micro-foundry-lab/)** — screens, a recorded walkthrough and what is real versus simulated
+
+[![Live showcase: micro-foundry-lab](site/preview.png)](https://phlppgdfry.github.io/micro-foundry-lab/)
+<!-- showcase:end -->
+
 A small, production-minded learning lab for [Microsoft Foundry](https://learn.microsoft.com/azure/foundry/). It starts with one model call and ends with a grounded document-assistant API—complete with source visibility, tests, and safe local configuration.
 
 > **Why micro?** Learn one practical concept at a time, keep model usage controlled, and only add infrastructure once it earns its place.
